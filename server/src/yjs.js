@@ -30,7 +30,8 @@ export function setupPersistence() {
       const saved = await col().findOne({ _id: docName });
       // Applying the saved state is a normal CRDT merge, so it is safe even if
       // a client already sent edits before this finished loading.
-      if (saved) Y.applyUpdate(ydoc, new Uint8Array(saved.update.buffer));
+      // A new temporary room has a placeholder (only expiresAt, no update yet), hence "?.".
+      if (saved?.update) Y.applyUpdate(ydoc, new Uint8Array(saved.update.buffer));
       let timer;
       ydoc.on("update", () => {
         clearTimeout(timer); // debounce: save 1 s after the last keystroke

@@ -43,14 +43,17 @@ Most student editors broadcast raw text over WebSockets, so two people typing in
 - **Run code in 5 languages:** Python (Pyodide) and JavaScript in browser Web Workers; Java, C++ and C in a sandboxed runner container (no internet, resource limits). All with a 10 s timeout
 - **AI assistant:** explain code, suggest fixes, pair-program (Ollama locally, or Gemini free tier)
 - **Offline-first:** keep typing without internet; changes sync on reconnect
-- **Persistent rooms:** MongoDB stores room data and document state
+- **Two ways to work:** *quick sessions* (no account, deleted after 24 h) and *long-term projects* (sign in, kept, members only, project dashboard)
+- **Accounts:** email + password, stored safely in MongoDB (salted `scrypt` hashes)
+- **Light and dark theme**, full-screen editor layout
+- **Persistent projects:** MongoDB stores room data and document state
 
 ## Architecture
 
 ```mermaid
 flowchart TB
   subgraph Browser["Browser (client)"]
-    UI["React + Vite + HeroUI<br/>Rooms, AI chat"]
+    UI["React + Vite + HeroUI<br/>Rooms, projects, AI chat"]
     Monaco["Monaco<br/>y-monaco binding"]
     Ydoc["Yjs Y.Doc<br/>CRDT, offline"]
     Runner["Code runner<br/>Pyodide, Workers"]

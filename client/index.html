@@ -4,8 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OctoCode</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+    <script>
+      // Pick the theme BEFORE the page draws, so it never flashes the wrong colors.
+      // Saved choice wins; otherwise follow the Mac's light/dark setting.
+      const saved = localStorage.getItem("octocode-theme");
+      const dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.classList.add(dark ? "dark" : "light");
+      document.documentElement.style.colorScheme = dark ? "dark" : "light";
+    </script>
   </head>
-  <body class="bg-background text-foreground">
+  <body class="bg-background text-foreground antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

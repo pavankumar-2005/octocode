@@ -4,12 +4,15 @@ import { IndexeddbPersistence } from "y-indexeddb";
 
 export type User = { name: string; color: string };
 
-export function createCollab(roomId: string, user: User) {
+export function createCollab(roomId: string, user: User, token: string | null) {
   const ydoc = new Y.Doc();
   // Offline-first: edits are saved in the browser (IndexedDB) and merged on reconnect.
   const offline = new IndexeddbPersistence(`octocode-${roomId}`, ydoc);
-  // Connects to ws://localhost:5050/yjs/<roomId>
-  const provider = new WebsocketProvider(import.meta.env.VITE_WS_URL, roomId, ydoc);
+  // Connects to ws://localhost:5050/yjs/<roomId>?token=...
+  // Browsers can't add headers to a WebSocket, so the login token goes in the URL (projects need it).
+  const provider = new WebsocketProvider(import.meta.env.VITE_WS_URL, roomId, ydoc, {
+    params: token ? { token } : {},
+  });
   provider.awareness.setLocalStateField("user", user); // presence: name + color
   return { ydoc, provider, offline, ytext: ydoc.getText("code") };
 }

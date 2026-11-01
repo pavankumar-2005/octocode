@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { addToast, Button, Card, CardBody, CardHeader, Textarea } from "@heroui/react";
 import { askAi } from "../lib/api";
+import { SparklesIcon } from "./Icons";
+
+// One-click starter questions shown while the chat is empty.
+const SUGGESTIONS = ["Explain this code", "Find bugs in my code", "How can I make this faster?"];
 
 type Message = { role: "you" | "ai"; text: string };
 type Props = { language: string; getCode: () => string; getSelection: () => string };
@@ -35,23 +39,35 @@ export default function AiChat({ language, getCode, getSelection }: Props) {
   }
 
   return (
-    <Card className="h-full" radius="sm">
-      <CardHeader className="justify-between py-2 text-sm font-medium">
+    <Card className="h-full border border-divider shadow-none" radius="lg">
+      <CardHeader className="flex h-10 shrink-0 items-center gap-2 border-b border-divider py-0 text-sm font-medium">
+        <span className="bg-brand grid size-5 place-items-center rounded-md text-white">
+          <SparklesIcon size={12} />
+        </span>
         AI assistant
-        <Button size="sm" variant="flat" onPress={explainSelection} isDisabled={loading}>
+        <Button size="sm" variant="flat" className="ml-auto h-7" onPress={explainSelection} isDisabled={loading}>
           Explain selection
         </Button>
       </CardHeader>
-      <CardBody className="flex flex-col gap-3 pt-0">
+      <CardBody className="flex flex-col gap-3">
         <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
           {messages.length === 0 && (
-            <p className="text-sm text-default-400">Ask about the code in the editor, e.g. "Why does this fail?"</p>
+            <div className="m-auto flex flex-col items-center gap-3 text-center">
+              <p className="text-sm text-default-400">Ask anything about the code in the editor.</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {SUGGESTIONS.map((s) => (
+                  <Button key={s} size="sm" variant="bordered" radius="full" onPress={() => send(s, getCode())}>
+                    {s}
+                  </Button>
+                ))}
+              </div>
+            </div>
           )}
           {messages.map((m, i) => (
             <div
               key={i}
               className={`rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
-                m.role === "you" ? "self-end bg-primary/20" : "bg-default-100"
+                m.role === "you" ? "self-end rounded-br-sm bg-primary text-primary-foreground" : "self-start rounded-bl-sm bg-default-100"
               }`}
             >
               {m.text}
@@ -72,7 +88,7 @@ export default function AiChat({ language, getCode, getSelection }: Props) {
               }
             }}
           />
-          <Button color="primary" isLoading={loading} onPress={() => send(input, getCode())}>
+          <Button color="primary" className="bg-brand" isLoading={loading} onPress={() => send(input, getCode())}>
             Send
           </Button>
         </div>

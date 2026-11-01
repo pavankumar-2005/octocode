@@ -7,21 +7,61 @@ Base URL (local): `http://localhost:5050`
 ### `GET /health`
 Returns `{ "ok": true }`. Use it to check the server is up.
 
-### `POST /api/rooms`
-Create a room.
+### Authentication
 
+Signed-in requests send `Authorization: Bearer <token>`. Any request without a valid token is treated as a guest. Tokens last 7 days.
+
+#### `POST /api/auth/register`
 ```json
 // request
-{ "name": "DSA practice", "language": "python" }
+{ "name": "Pavan", "email": "pavan@example.com", "password": "at-least-8" }
 
 // response 201
-{ "_id": "a1B2c3D4", "name": "DSA practice", "language": "python", "createdAt": "2026-10-29T10:00:00.000Z" }
+{ "token": "64 hex chars", "user": { "_id": "I5Ksd22M_-0P", "name": "Pavan", "email": "pavan@example.com" } }
+```
+Errors: `400 { "error": "name required" | "valid email required" | "password must be at least 8 characters" }`, `409 { "error": "email already registered" }`. The email is stored lower-case.
+
+#### `POST /api/auth/login`
+Request `{ "email", "password" }` → `200` with the same shape as register. Error: `401 { "error": "wrong email or password" }` (same message for an unknown email).
+
+#### `GET /api/auth/me`
+→ `200 { "user": { "_id", "name", "email" } }`, or `401 { "error": "login required" }`.
+
+#### `POST /api/auth/logout`
+Deletes the current token's session → `204` (no body). Needs a valid token (`401` otherwise).
+
+### Rooms
+
+There are two kinds of rooms:
+
+| `kind` | Who can create | Who can open | Lifetime |
+| --- | --- | --- | --- |
+| `"temporary"` (default) | anyone | anyone with the link | 24 h, then deleted (room + code) |
+| `"project"` | signed-in users | signed-in users with the link; opening it adds you to `members` | until deleted |
+
+Rooms created before 2026-11-01 have no `kind` and no `expiresAt`. They behave like temporary rooms that never expire.
+
+#### `POST /api/rooms`
+```json
+// request
+{ "name": "DSA practice", "language": "python", "kind": "temporary" }
+
+// response 201 (temporary)
+{ "_id": "a1B2c3D4", "name": "DSA practice", "language": "python", "kind": "temporary",
+  "createdAt": "2026-11-01T10:00:00.000Z", "expiresAt": "2026-11-02T10:00:00.000Z" }
+
+// response 201 (project)
+{ "_id": "nREUeAGL", "name": "My API", "language": "java", "kind": "project",
+  "createdAt": "…", "ownerId": "I5Ksd22M_-0P", "members": ["I5Ksd22M_-0P"] }
 ```
 
-`language` is one of `"python"`, `"javascript"`, `"java"`, `"cpp"`, `"c"` (anything else becomes `"python"`). `name` defaults to `"Untitled room"`.
+`language` is one of `"python"`, `"javascript"`, `"java"`, `"cpp"`, `"c"` (anything else becomes `"python"`). `name` defaults to `"Untitled room"`. Any `kind` other than `"project"` becomes `"temporary"`. Error: `401 { "error": "login required" }` for a project without a token.
 
-### `GET /api/rooms/:id`
-Fetch a room. Returns the same shape as above, or `404 { "error": "room not found" }`.
+#### `GET /api/rooms/:id`
+Fetch a room. Returns the same shape as above. Errors: `404 { "error": "room not found" }` (also for expired rooms), `401 { "error": "login required" }` for a project without a valid token.
+
+#### `GET /api/rooms`
+Your projects (every project where you are in `members`), newest first. Requires a token (`401` otherwise).
 
 ### `POST /api/ai/chat`
 Ask the AI assistant about the current code.
@@ -55,7 +95,8 @@ Limits: compile 15 s, run 10 s, output 64 KB, no stdin, no internet. Java: the f
 
 ## WebSocket (Yjs sync)
 
-- URL: `ws://localhost:5050/yjs/<roomId>`
+- URL: `ws://localhost:5050/yjs/<roomId>?token=<token>` (`token` is optional for temporary rooms)
+- Access check before the upgrade: the connection is closed for an unknown or expired room, and for a project unless the token is valid and its user is in `members`. Browsers can't set headers on a WebSocket, so the token goes in the query string.
 - Protocol: the standard `y-websocket` protocol (binary messages: sync + awareness). Don't send JSON; use `WebsocketProvider` on the client.
 - Shared type: `Y.Text` named `"code"`.
 - Awareness state per user: `{ user: { name, color } }`.

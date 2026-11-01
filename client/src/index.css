@@ -3,10 +3,75 @@
 @source "../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* HeroUIProvider wraps the whole app in <div data-overlay-container>. Without a height on it,
+   "h-full" pages were only as tall as their content: the "editor fills half the screen" bug. */
 html,
 body,
-#root {
+#root,
+#root > [data-overlay-container] {
   height: 100%;
+}
+
+:root {
+  --grid-line: rgb(24 24 48 / 0.06);
+  --blob-opacity: 0.28;
+}
+.dark {
+  --grid-line: rgb(255 255 255 / 0.045);
+  --blob-opacity: 0.4;
+}
+
+/* Brand gradient (violet → cyan) for text and fills. */
+.text-brand {
+  background-image: linear-gradient(90deg, #8b5cf6, #06b6d4 70%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+.bg-brand {
+  background-image: linear-gradient(135deg, #7c3aed, #06b6d4);
+}
+
+/* Page background: a faint grid that fades out, plus slowly drifting colored glows. */
+.octo-grid {
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+}
+.octo-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: var(--blob-opacity);
+  animation: octo-drift 16s ease-in-out infinite alternate;
+}
+@keyframes octo-drift {
+  to {
+    transform: translate(60px, 40px) scale(1.15);
+  }
+}
+
+/* The fake editor on the login page: blinking teammate cursors. */
+.octo-caret {
+  animation: octo-blink 1.1s steps(1) infinite;
+}
+@keyframes octo-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .octo-blob,
+  .octo-caret {
+    animation: none;
+  }
 }
 
 /* y-monaco base styles for remote cursors. Per-user colors and names are added in Room.tsx. */

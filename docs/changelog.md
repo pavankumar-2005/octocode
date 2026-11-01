@@ -2,6 +2,18 @@
 
 Newest first. One entry per change. See `docs/README.md` for the template.
 
+### 2026-11-01: Full-screen editor, light/dark theme, quick sessions vs long-term projects, accounts
+- **What:**
+  - **Full-screen room:** fixed the bug where the editor filled only part of the screen (HeroUI's wrapper div had no height). New layout: header (name, room type, status, avatars, theme, Copy link, Run), editor with a file tab, AI + output panels, status bar. Panels stack on phones.
+  - **Light/dark theme:** a toggle on every page, saved in `localStorage`, defaults to the OS setting, no flash on load. Brand colors in `hero.ts` and matching Monaco themes.
+  - **New landing page** with two modes: *Quick session* (no account, room + code auto-deleted after 24 h) and *Long-term project* (sign-in required, kept).
+  - **Accounts:** register / sign in / sign out, stored in MongoDB (`users`, `sessions`). Passwords are hashed with `scrypt` + salt. New `/login` page with `?next=` redirect and a `/projects` dashboard (list, create, open a teammate's project by link).
+  - **Access rules on the server:** project REST calls and the Yjs WebSocket both require a signed-in member. Opening a project link while signed in adds you to `members`.
+  - Restyled AI chat (suggestion buttons, chat bubbles) and Output panel (terminal look, success/error chip).
+- **Why:** the developer asked for a fuller, more modern UI, a theme choice, and separate short-lived vs long-lived work with sign-in for the long-lived kind.
+- **Files:** `server/src/auth.js` (new), `server/src/routes/auth.js` (new), `server/src/routes/rooms.js`, `server/src/index.js`, `server/src/db.js`, `server/src/yjs.js`, `client/index.html`, `client/src/main.tsx`, `client/src/hero.ts`, `client/src/index.css`, `client/src/lib/{api.ts,auth.tsx (new),theme.tsx (new),user.ts,collab.ts,monaco.ts,languages.ts}`, `client/src/pages/{Home.tsx,Room.tsx,Login.tsx (new),Projects.tsx (new)}`, `client/src/components/{AiChat.tsx,OutputPanel.tsx,CodeEditor.tsx,TopNav.tsx (new),ThemeToggle.tsx (new),Logo.tsx (new),Backdrop.tsx (new),Icons.tsx (new)}`, `docs/*`, `BUILD_GUIDE.md`, `README.md`
+- **Test:** `make up`, open http://localhost:5173. (1) Toggle the sun/moon button; refresh: the theme stays. (2) Start a quick session: the room fills the screen and shows "Temporary · 23h left". (3) Create an account, create a project, copy its link. (4) In a private window open the link: you land on sign-in; sign in with a second account and you're brought back into the project, which now appears on that account's dashboard. API: `curl -s -X POST localhost:5050/api/rooms -H "Content-Type: application/json" -d '{"kind":"project"}'` → `{"error":"login required"}`.
+
 ### 2026-11-01: Connected to GitHub
 - **What:** Linked the local repo to `https://github.com/pavankumar-2005/octocode` (remote `origin`, branch `main`) and merged the README-only commit that was created on GitHub. Kept the local `README.md` (setup + commands) and saved the GitHub README as `docs/project-overview.md`. Put the real clone URL in the README quick start.
 - **Why:** The first push was rejected because GitHub already had a commit the local repo didn't know about (two unrelated histories).
