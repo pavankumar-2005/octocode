@@ -28,8 +28,6 @@ Prefer clicking? Double-click `start.command` in Finder.
 | `make rebuild` | Rebuild after changing `package.json` |
 | `make reset` | Stop and wipe the database |
 
-First time on a new Mac? See **[BUILD_GUIDE.md](BUILD_GUIDE.md)** (setup, 2-day plan, all code).
-
 ---
 
 ## Why CRDTs
@@ -95,7 +93,7 @@ octocode/
 ├── client/          React + HeroUI app
 ├── server/          Express API + Yjs WebSocket relay
 ├── runner/          Sandboxed Java / C++ / C compiler + runner
-├── docs/            Documentation and learning notes
+├── docs/            Documentation
 ├── docker-compose.yml
 ├── Makefile
 └── start.command
@@ -105,16 +103,10 @@ octocode/
 
 | Doc | Purpose |
 | --- | --- |
-| [BUILD_GUIDE.md](BUILD_GUIDE.md) | 2-day plan, setup, all code |
-| [docs/how-octocode-works.md](docs/how-octocode-works.md) | **Start here:** the whole project in simple English |
-| [docs/project-overview.md](docs/project-overview.md) | Project overview (problem, goals, features) |
-| [docs/README.md](docs/README.md) | Docs index and how to update |
 | [docs/architecture.md](docs/architecture.md) | How the system works |
 | [docs/api.md](docs/api.md) | REST and WebSocket reference |
-| [docs/learning-path.md](docs/learning-path.md) | Concepts to learn, per block |
 | [docs/decisions.md](docs/decisions.md) | Why we chose what we chose |
 | [docs/changelog.md](docs/changelog.md) | What changed, when |
-| [docs/viva-prep.md](docs/viva-prep.md) | Viva questions and demo script |
 
 ## Configuration
 
