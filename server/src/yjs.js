@@ -6,9 +6,13 @@ import { getDb } from "./db.js";
 // two instances cause the "Yjs was already imported" bug and broken docs.
 const require = createRequire(import.meta.url);
 const Y = require("yjs");
-const { setupWSConnection, setPersistence } = require("y-websocket/bin/utils");
+const { setupWSConnection, setPersistence, docs } = require("y-websocket/bin/utils");
 
 export { setupWSConnection };
+
+// How many browsers are connected to this room right now. y-websocket keeps every
+// open room in "docs", and each room's "conns" holds one entry per open WebSocket.
+export const onlineCount = (docName) => docs.get(docName)?.conns.size ?? 0;
 
 const col = () => getDb().collection("yjs_docs");
 

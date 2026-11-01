@@ -2,12 +2,16 @@ const API = import.meta.env.VITE_API_URL;
 const TOKEN_KEY = "octocode-token";
 
 export type RoomKind = "temporary" | "project";
+export const MAX_TEAM = 6; // a room is for 1 to 6 people (the server checks this too)
+
 export type Room = {
   _id: string;
   name: string;
   language: string;
   kind?: RoomKind; // missing on rooms made before accounts existed (treated as temporary)
+  teamSize?: number; // 1 to 6; missing on older rooms (treated as 6)
   createdAt: string;
+  lastOpenedAt?: string; // projects only: last time anyone opened it
   expiresAt?: string; // temporary rooms only
   ownerId?: string; // projects only
   members?: string[]; // projects only
@@ -47,8 +51,8 @@ export const getMe = () => get("/api/auth/me").then((r) => json<{ user: Account 
 
 export const logout = () => post("/api/auth/logout", {});
 
-export const createRoom = (name: string, language: string, kind: RoomKind = "temporary") =>
-  post("/api/rooms", { name, language, kind }).then((r) => json<Room>(r));
+export const createRoom = (name: string, language: string, kind: RoomKind, teamSize: number) =>
+  post("/api/rooms", { name, language, kind, teamSize }).then((r) => json<Room>(r));
 
 export const getRoom = (id: string) => get(`/api/rooms/${id}`).then((r) => json<Room>(r));
 

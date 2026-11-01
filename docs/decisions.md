@@ -26,6 +26,9 @@ Short records of *why*. Add a new entry whenever you make a technical choice.
 | D20 | **Check room access on the WebSocket upgrade**, with the token in `?token=` | The code travels over the WebSocket, so REST-only checks would leave projects readable. Browsers can't set WebSocket headers | Tokens appear in server URLs (fine for local dev; use a short-lived ticket in production) |
 | D21 | Theme = **`light`/`dark` class on `<html>`**, set by an inline script before first paint, saved in `localStorage` | HeroUI and Tailwind both key off that class; the early script prevents a white flash | A tiny bit of JS in `index.html` |
 | D22 | Fix full-height layout by giving HeroUI's `[data-overlay-container]` wrapper `height: 100%` | That wrapper had no height, so `h-full` pages collapsed to their content (the "half screen" editor) | Relies on HeroUI's wrapper attribute name |
+| D23 | **Team size 1–6 per room**, chosen at creation. Projects limit *members*; quick sessions limit *people connected at once* | Projects have accounts, so membership is the natural limit. Quick sessions have no accounts, so the only thing to count is live connections | A quick session counts browser tabs, not people (two tabs = two seats); live counts are in memory, so they reset if the server restarts |
+| D24 | Atomic "join if not full" with `updateOne({ "members.<n-1>": { $exists: false } }, { $addToSet })` | One database step checks and joins together, so two people can't both take the last seat | Slightly unusual query; explained in a comment |
+| D25 | **"Your past projects" on the Home page**, sorted by `lastOpenedAt` | Signed-in users see their work as soon as they arrive, most recent first | One extra write each time a project is opened |
 
 ## Template
 

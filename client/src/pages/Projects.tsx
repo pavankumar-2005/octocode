@@ -4,10 +4,12 @@ import { motion } from "framer-motion";
 import { addToast, Button, Card, CardBody, Chip, Input, Select, SelectItem, Skeleton } from "@heroui/react";
 import Backdrop from "../components/Backdrop";
 import TopNav from "../components/TopNav";
-import { ArrowRightIcon, FolderIcon, PlusIcon, UsersIcon } from "../components/Icons";
+import ProjectTile from "../components/ProjectTile";
+import TeamSizeSelect from "../components/TeamSizeSelect";
+import { ArrowRightIcon, FolderIcon, PlusIcon } from "../components/Icons";
 import { createRoom, listProjects, type Room } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { getLanguage, LANGUAGES } from "../lib/languages";
+import { LANGUAGES } from "../lib/languages";
 
 export default function Projects() {
   const { account, ready } = useAuth();
@@ -15,6 +17,7 @@ export default function Projects() {
   const [projects, setProjects] = useState<Room[] | null>(null);
   const [name, setName] = useState("");
   const [language, setLanguage] = useState("python");
+  const [teamSize, setTeamSize] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
   const [openId, setOpenId] = useState("");
 
@@ -32,9 +35,10 @@ export default function Projects() {
 
   async function create() {
     if (!name.trim()) return addToast({ title: "Give your project a name", color: "warning" });
+    if (!teamSize) return addToast({ title: "Choose your team size", color: "warning" });
     setCreating(true);
     try {
-      const room = await createRoom(name.trim(), language, "project");
+      const room = await createRoom(name.trim(), language, "project", teamSize);
       navigate(`/room/${room._id}`, { state: { fresh: true } });
     } catch (err) {
       addToast({ title: "Could not create project", description: (err as Error).message, color: "danger" });
@@ -65,7 +69,7 @@ export default function Projects() {
         </motion.div>
 
         {/* New project + open by link */}
-        <div className="mt-8 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+        <div className="mt-8 grid gap-4 xl:grid-cols-[2fr_1fr]">
           <Card className="border border-divider bg-content1/80 shadow-sm backdrop-blur-xl">
             <CardBody className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center">
               <span className="bg-brand hidden size-10 shrink-0 place-items-center rounded-xl text-white sm:grid">
@@ -91,6 +95,7 @@ export default function Projects() {
                   <SelectItem key={l.id}>{l.label}</SelectItem>
                 ))}
               </Select>
+              <TeamSizeSelect value={teamSize} onChange={setTeamSize} className="sm:w-40 sm:shrink-0" />
               <Button color="primary" className="bg-brand shrink-0 font-medium" isLoading={creating} onPress={create}>
                 Create
               </Button>
@@ -151,37 +156,5 @@ export default function Projects() {
         )}
       </main>
     </div>
-  );
-}
-
-function ProjectTile({ project, isOwner, onOpen }: { project: Room; isOwner: boolean; onOpen: () => void }) {
-  const lang = getLanguage(project.language);
-  const members = project.members?.length ?? 1;
-  return (
-    <Card
-      isPressable
-      onPress={onOpen}
-      className="group h-full w-full border border-divider bg-content1/80 shadow-sm backdrop-blur-xl transition-all hover:-translate-y-1 hover:border-primary/50 hover:shadow-xl"
-    >
-      {/* Colored strip in the project's language color */}
-      <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${lang.color}, transparent)` }} />
-      <CardBody className="flex flex-col gap-3 p-5 text-left">
-        <div className="flex items-center gap-2 text-xs text-default-500">
-          <span className="size-2 rounded-full" style={{ backgroundColor: lang.color }} />
-          <span className="font-mono">{lang.file}</span>
-          <Chip size="sm" variant="flat" color={isOwner ? "primary" : "default"} className="ml-auto">
-            {isOwner ? "Owner" : "Shared with you"}
-          </Chip>
-        </div>
-        <p className="font-display truncate text-lg font-semibold">{project.name}</p>
-        <div className="flex items-center gap-3 text-xs text-default-400">
-          <span className="flex items-center gap-1">
-            <UsersIcon size={12} /> {members} {members === 1 ? "member" : "members"}
-          </span>
-          <span>Created {new Date(project.createdAt).toLocaleDateString()}</span>
-          <ArrowRightIcon size={16} className="ml-auto text-primary opacity-0 transition-opacity group-hover:opacity-100" />
-        </div>
-      </CardBody>
-    </Card>
   );
 }

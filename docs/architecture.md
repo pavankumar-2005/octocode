@@ -87,6 +87,8 @@ Python and JavaScript run in the browser. Java, C++ and C run in the `runner` co
 - The client keeps the token in `localStorage` and sends `Authorization: Bearer <token>` on every REST call. `attachUser` middleware turns it into `req.user` (or `null`).
 - Opening a project: `GET /api/rooms/:id` → `401` without a token. The client redirects to `/login?next=/room/:id` and comes back after sign-in. A signed-in user with the link is added to `members`.
 - The WebSocket upgrade runs the same check (`canJoin` in `server/src/index.js`) using `?token=` from the URL, so a project's code can't be read by connecting to `/yjs/<id>` directly.
+- Team size (1–6, chosen at creation): a project accepts at most `teamSize` members. The join is a single conditional update (`members.<teamSize-1>` must not exist), so two people can't take the last seat at once. A temporary room accepts at most `teamSize` live WebSocket connections, counted from y-websocket's in-memory `docs` map (`onlineCount` in `server/src/yjs.js`), checked on `GET /api/rooms/:id` and again on the upgrade.
+- Past projects: opening a project sets `lastOpenedAt`. `GET /api/rooms` sorts by it, and the Home page shows the three most recent to signed-in users.
 - Expiry: `rooms`, `yjs_docs` and `sessions` have TTL indexes on `expiresAt`. A temporary room gets a `yjs_docs` placeholder with the same `expiresAt`, so its code is deleted with it. `findLiveRoom` hides rooms in the up-to-a-minute gap before MongoDB deletes them.
 
 ### 6. Theme
@@ -104,7 +106,7 @@ Python and JavaScript run in the browser. Java, C++ and C run in the `runner` co
 
 | Collection | Document |
 | --- | --- |
-| `rooms` | `{ _id (8-char id), name, language (python, javascript, java, cpp, c), kind ("temporary" \| "project"), createdAt, expiresAt? (temporary), ownerId? + members[] (project) }` |
+| `rooms` | `{ _id (8-char id), name, language (python, javascript, java, cpp, c), kind ("temporary" \| "project"), teamSize (1–6), createdAt, expiresAt? (temporary), ownerId? + members[] + lastOpenedAt? (project) }` |
 | `yjs_docs` | `{ _id (= room id), update (binary Yjs state), updatedAt, expiresAt? (temporary rooms) }` |
 | `users` | `{ _id (12-char id), name, email (unique, lower-case), passwordHash ("salt:scrypt-hash"), createdAt }` |
 | `sessions` | `{ _id (sha256 of token), userId, expiresAt }` |
@@ -134,10 +136,12 @@ Indexes (created on server start in `db.js`): unique `users.email`; TTL (`expire
 | `client/src/lib/theme.tsx` | `ThemeProvider` / `useTheme`: light/dark switch |
 | `client/src/lib/user.ts` | Guest name + color in `localStorage` |
 | `client/src/lib/runCode.ts` | Picks browser worker or server runner; worker timeout |
-| `client/src/pages/Home.tsx` | Landing: quick session form + join, long-term project entry |
+| `client/src/pages/Home.tsx` | Landing: past projects (signed in), quick session form + join, long-term project entry |
 | `client/src/pages/Login.tsx` | Sign in / create account, `?next=` redirect |
 | `client/src/pages/Projects.tsx` | Project dashboard: list, create, open by link |
 | `client/src/pages/Room.tsx` | Full-screen room: header, editor, AI + output, status bar; project login redirect |
+| `client/src/components/TeamSizeSelect.tsx` | "Team size" dropdown (Just me … 6 people), used when creating rooms |
+| `client/src/components/ProjectTile.tsx` | Project card (members/teamSize, last opened), used on Home and Projects |
 | `client/src/components/TopNav.tsx`, `ThemeToggle.tsx`, `Logo.tsx`, `Backdrop.tsx`, `Icons.tsx` | Shared UI pieces |
 | `client/src/components/StatusChip.tsx` | Online / Syncing / Offline chip from WebSocket status + `navigator.onLine` |
 | `client/src/components/AiChat.tsx` | Chat sidebar + "Explain selection" |

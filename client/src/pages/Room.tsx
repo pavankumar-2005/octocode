@@ -9,7 +9,7 @@ import StatusChip from "../components/StatusChip";
 import Logo from "../components/Logo";
 import ThemeToggle from "../components/ThemeToggle";
 import { ClockIcon, FolderIcon, LinkIcon, PlayIcon } from "../components/Icons";
-import { getRoom, getToken, type Room as RoomInfo } from "../lib/api";
+import { getRoom, getToken, MAX_TEAM, type Room as RoomInfo } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { createCollab, destroyCollab, type Collab, type User } from "../lib/collab";
 import { getLanguage } from "../lib/languages";
@@ -28,6 +28,7 @@ export default function Room() {
   const [room, setRoom] = useState<RoomInfo | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [needsLogin, setNeedsLogin] = useState(false);
+  const [full, setFull] = useState<"room" | "project" | null>(null);
   const [collab, setCollab] = useState<Collab | null>(null);
   const [peers, setPeers] = useState<Peer[]>([]);
   const [result, setResult] = useState<RunResult | null>(null);
@@ -57,6 +58,8 @@ export default function Room() {
       .catch((err: Error) => {
         if (err.message === "room not found") return setNotFound(true);
         if (err.message === "login required") return setNeedsLogin(true);
+        if (err.message === "room is full") return setFull("room");
+        if (err.message === "project is full") return setFull("project");
         const cached = localStorage.getItem(cacheKey);
         setRoom(cached ? JSON.parse(cached) : { _id: id, name: id, language: "python", createdAt: "" });
         addToast({ title: "Server unreachable", description: "Editing offline; changes sync later.", color: "warning" });
@@ -126,6 +129,23 @@ export default function Room() {
         <p className="font-display text-xl font-semibold">Room “{id}” not found</p>
         <p className="max-w-sm text-center text-sm text-default-500">
           Quick sessions are deleted after 24 hours. Ask for a new link, or start your own.
+        </p>
+        <Button as={Link} to="/" color="primary" className="bg-brand">
+          Back home
+        </Button>
+      </Centered>
+    );
+  }
+
+  if (full) {
+    return (
+      <Centered>
+        <span className="grid size-14 place-items-center rounded-2xl bg-default-100 text-2xl">👥</span>
+        <p className="font-display text-xl font-semibold">This {full} is full</p>
+        <p className="max-w-sm text-center text-sm text-default-500">
+          {full === "room"
+            ? "Everyone this quick session was made for is already here. Try again when someone leaves."
+            : "This project has reached its team size, so new members can't join."}
         </p>
         <Button as={Link} to="/" color="primary" className="bg-brand">
           Back home
@@ -234,7 +254,7 @@ export default function Room() {
         </span>
         <span>{lang.runsIn === "browser" ? "Runs in your browser" : "Runs in the sandbox"}</span>
         <span className="hidden sm:inline">
-          {peers.length} {peers.length === 1 ? "person" : "people"} here
+          {peers.length}/{room.teamSize ?? MAX_TEAM} people here
         </span>
         <span className="ml-auto hidden sm:inline">Synced live with CRDTs · works offline</span>
       </footer>

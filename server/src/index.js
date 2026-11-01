@@ -4,10 +4,10 @@ import express from "express";
 import cors from "cors";
 import { WebSocketServer } from "ws";
 import { connectDb } from "./db.js";
-import { setupPersistence, setupWSConnection } from "./yjs.js";
+import { onlineCount, setupPersistence, setupWSConnection } from "./yjs.js";
 import { attachUser, userFromToken } from "./auth.js";
 import authRouter from "./routes/auth.js";
-import roomsRouter, { findLiveRoom } from "./routes/rooms.js";
+import roomsRouter, { findLiveRoom, teamLimit } from "./routes/rooms.js";
 import aiRouter from "./routes/ai.js";
 import runRouter from "./routes/run.js";
 
@@ -25,13 +25,13 @@ const server = http.createServer(app);
 // noServer: we decide ourselves which upgrade requests become WebSockets.
 const wss = new WebSocketServer({ noServer: true });
 
-// Who may open this room's live document? Temporary rooms: anyone with the link.
-// Projects: only signed-in members. Checking here (not just in the UI) means
-// nobody can read or edit a project by talking to the WebSocket directly.
+// Who may open this room's live document? Temporary rooms: anyone with the link, while
+// fewer than teamSize people are connected. Projects: only signed-in members. Checking
+// here (not just in the UI) means nobody can get in by talking to the WebSocket directly.
 async function canJoin(roomId, token) {
   const room = await findLiveRoom(roomId);
   if (!room) return false; // unknown or expired room
-  if (room.kind !== "project") return true;
+  if (room.kind !== "project") return onlineCount(roomId) < teamLimit(room);
   const user = await userFromToken(token);
   return Boolean(user && room.members.includes(user._id));
 }

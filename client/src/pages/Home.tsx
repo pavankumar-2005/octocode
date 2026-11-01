@@ -1,11 +1,13 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { addToast, Button, Card, CardBody, Chip, Divider, Input, Select, SelectItem } from "@heroui/react";
+import { addToast, Button, Card, CardBody, Chip, Divider, Input, Select, SelectItem, Skeleton } from "@heroui/react";
 import Backdrop from "../components/Backdrop";
 import TopNav from "../components/TopNav";
+import ProjectTile from "../components/ProjectTile";
+import TeamSizeSelect from "../components/TeamSizeSelect";
 import { ArrowRightIcon, BoltIcon, CheckIcon, ClockIcon, FolderIcon, LockIcon, UsersIcon } from "../components/Icons";
-import { createRoom } from "../lib/api";
+import { createRoom, listProjects, type Room } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { LANGUAGES } from "../lib/languages";
 import { loadUser, saveName } from "../lib/user";
@@ -38,6 +40,8 @@ export default function Home() {
           </p>
         </motion.div>
 
+        <PastProjects />
+
         <div className="mt-12 grid w-full gap-6 lg:grid-cols-2">
           <motion.div {...rise(0.1)}>
             <QuickSessionCard />
@@ -61,6 +65,58 @@ export default function Home() {
   );
 }
 
+/* ---------- Past projects (signed-in users only) ---------- */
+
+function PastProjects() {
+  const { account } = useAuth();
+  const navigate = useNavigate();
+  const [projects, setProjects] = useState<Room[] | null>(null);
+
+  useEffect(() => {
+    if (!account) return;
+    listProjects()
+      .then(setProjects)
+      .catch(() => setProjects([]));
+  }, [account?._id]);
+
+  if (!account) return null; // guests never see this section
+
+  return (
+    <motion.section {...rise(0.05)} className="mt-12 w-full">
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <h2 className="font-display text-xl font-semibold">Your past projects</h2>
+          <p className="text-sm text-default-500">Pick up right where you left off.</p>
+        </div>
+        <Button as={Link} to="/projects" size="sm" variant="light" endContent={<ArrowRightIcon size={14} />}>
+          View all
+        </Button>
+      </div>
+      {!projects ? (
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-32 rounded-2xl" />
+          ))}
+        </div>
+      ) : projects.length === 0 ? (
+        <div className="mt-4 rounded-2xl border border-dashed border-divider px-6 py-8 text-center text-sm text-default-500">
+          No projects yet.{" "}
+          <Link to="/projects" className="font-medium text-primary hover:underline">
+            Create your first one
+          </Link>
+          .
+        </div>
+      ) : (
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {projects.slice(0, 3).map((p) => (
+            <ProjectTile key={p._id} project={p} isOwner={p.ownerId === account._id} onOpen={() => navigate(`/room/${p._id}`)} />
+          ))}
+        </div>
+      )}
+    </motion.section>
+  );
+}
+
 /* ---------- Quick session (temporary, no account) ---------- */
 
 function QuickSessionCard() {
@@ -69,15 +125,17 @@ function QuickSessionCard() {
   const [name, setName] = useState(loadUser()?.name ?? account?.name ?? "");
   const [roomName, setRoomName] = useState("");
   const [language, setLanguage] = useState("python");
+  const [teamSize, setTeamSize] = useState<number | null>(null);
   const [joinId, setJoinId] = useState("");
   const [creating, setCreating] = useState(false);
 
   async function create() {
     if (!name.trim()) return addToast({ title: "Enter your name first", color: "warning" });
+    if (!teamSize) return addToast({ title: "Choose your team size", color: "warning" });
     saveName(name);
     setCreating(true);
     try {
-      const room = await createRoom(roomName.trim(), language, "temporary");
+      const room = await createRoom(roomName.trim(), language, "temporary", teamSize);
       navigate(`/room/${room._id}`, { state: { fresh: true } });
     } catch (err) {
       addToast({ title: "Could not create room", description: (err as Error).message, color: "danger" });
@@ -110,7 +168,10 @@ function QuickSessionCard() {
       features={["No sign-up, just a name", "Share one link to invite", "Deleted automatically after 24 h"]}
     >
       <div className="flex flex-col gap-3">
-        <Input label="Your name" size="sm" value={name} onValueChange={setName} isRequired />
+        <div className="grid gap-3 sm:grid-cols-[1fr_10rem]">
+          <Input label="Your name" size="sm" value={name} onValueChange={setName} isRequired />
+          <TeamSizeSelect value={teamSize} onChange={setTeamSize} />
+        </div>
         <div className="grid gap-3 sm:grid-cols-[1fr_10rem]">
           <Input label="Room name" size="sm" placeholder="DSA practice" value={roomName} onValueChange={setRoomName} />
           <Select
@@ -169,7 +230,7 @@ function ProjectCard() {
           Sign-in required
         </Chip>
       }
-      description="Projects that stay. Come back next week, next month, next semester: your code is right where you left it."
+      description="Projects that stay. From a class assignment to a product your team ships at work: come back any time and your code is right where you left it."
       features={["Saved until you're done", "All your projects on one dashboard", "Only signed-in teammates can open it"]}
     >
       <div className="flex h-full flex-col gap-4">

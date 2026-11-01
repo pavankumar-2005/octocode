@@ -39,29 +39,36 @@ There are two kinds of rooms:
 | `"temporary"` (default) | anyone | anyone with the link | 24 h, then deleted (room + code) |
 | `"project"` | signed-in users | signed-in users with the link; opening it adds you to `members` | until deleted |
 
-Rooms created before 2026-11-01 have no `kind` and no `expiresAt`. They behave like temporary rooms that never expire.
+Every room also has a **`teamSize`** (1 to 6), chosen at creation:
+
+| `kind` | What `teamSize` limits |
+| --- | --- |
+| `"project"` | Number of **members**. When `members` is full, new users get `403 { "error": "project is full" }` |
+| `"temporary"` | Number of people **connected at the same time**. When full, `GET` returns `403 { "error": "room is full" }` and the WebSocket is refused |
+
+Rooms created before 2026-11-01 have no `kind`, `expiresAt` or `teamSize`. They behave like temporary rooms that never expire and allow 6 people.
 
 #### `POST /api/rooms`
 ```json
 // request
-{ "name": "DSA practice", "language": "python", "kind": "temporary" }
+{ "name": "DSA practice", "language": "python", "kind": "temporary", "teamSize": 3 }
 
 // response 201 (temporary)
-{ "_id": "a1B2c3D4", "name": "DSA practice", "language": "python", "kind": "temporary",
+{ "_id": "a1B2c3D4", "name": "DSA practice", "language": "python", "kind": "temporary", "teamSize": 3,
   "createdAt": "2026-11-01T10:00:00.000Z", "expiresAt": "2026-11-02T10:00:00.000Z" }
 
 // response 201 (project)
-{ "_id": "nREUeAGL", "name": "My API", "language": "java", "kind": "project",
-  "createdAt": "…", "ownerId": "I5Ksd22M_-0P", "members": ["I5Ksd22M_-0P"] }
+{ "_id": "nREUeAGL", "name": "My API", "language": "java", "kind": "project", "teamSize": 4,
+  "createdAt": "…", "lastOpenedAt": "…", "ownerId": "I5Ksd22M_-0P", "members": ["I5Ksd22M_-0P"] }
 ```
 
-`language` is one of `"python"`, `"javascript"`, `"java"`, `"cpp"`, `"c"` (anything else becomes `"python"`). `name` defaults to `"Untitled room"`. Any `kind` other than `"project"` becomes `"temporary"`. Error: `401 { "error": "login required" }` for a project without a token.
+`language` is one of `"python"`, `"javascript"`, `"java"`, `"cpp"`, `"c"` (anything else becomes `"python"`). `name` defaults to `"Untitled room"`. Any `kind` other than `"project"` becomes `"temporary"`. `teamSize` is required: a whole number from 1 to 6. Errors: `400 { "error": "team size must be 1 to 6" }`, `401 { "error": "login required" }` for a project without a token.
 
 #### `GET /api/rooms/:id`
-Fetch a room. Returns the same shape as above. Errors: `404 { "error": "room not found" }` (also for expired rooms), `401 { "error": "login required" }` for a project without a valid token.
+Fetch a room. Returns the same shape as above. For a project, it also updates `lastOpenedAt`. Errors: `404 { "error": "room not found" }` (also for expired rooms), `401 { "error": "login required" }` for a project without a valid token, `403 { "error": "project is full" }` / `403 { "error": "room is full" }` when the team size is reached.
 
 #### `GET /api/rooms`
-Your projects (every project where you are in `members`), newest first. Requires a token (`401` otherwise).
+Your projects (every project where you are in `members`), most recently opened first (`lastOpenedAt`). Requires a token (`401` otherwise). The Home page shows the first three as "Your past projects".
 
 ### `POST /api/ai/chat`
 Ask the AI assistant about the current code.
@@ -96,7 +103,7 @@ Limits: compile 15 s, run 10 s, output 64 KB, no stdin, no internet. Java: the f
 ## WebSocket (Yjs sync)
 
 - URL: `ws://localhost:5050/yjs/<roomId>?token=<token>` (`token` is optional for temporary rooms)
-- Access check before the upgrade: the connection is closed for an unknown or expired room, and for a project unless the token is valid and its user is in `members`. Browsers can't set headers on a WebSocket, so the token goes in the query string.
+- Access check before the upgrade: the connection is closed for an unknown or expired room, for a temporary room that already has `teamSize` connections, and for a project unless the token is valid and its user is in `members`. Browsers can't set headers on a WebSocket, so the token goes in the query string.
 - Protocol: the standard `y-websocket` protocol (binary messages: sync + awareness). Don't send JSON; use `WebsocketProvider` on the client.
 - Shared type: `Y.Text` named `"code"`.
 - Awareness state per user: `{ user: { name, color } }`.

@@ -2,6 +2,15 @@
 
 Newest first. One entry per change: what, why, files, how to test.
 
+### 2026-11-01: Team size, past projects, wording for professional teams
+- **What:**
+  - **Team size:** choosing 1 to 6 people is now required when creating a quick session or a project. Projects accept at most that many members ("project is full"); quick sessions accept at most that many people at once ("room is full"). The server checks this on the REST call and on the WebSocket. The room status bar shows seats taken, e.g. "1/2 people here", and project cards show "2/4 members".
+  - **Your past projects:** signed-in users see their three most recently opened projects on the Home page, with "View all" to the dashboard. Projects are now sorted by last opened.
+  - **Wording:** the long-term project card now speaks to both classes and workplaces instead of only students.
+- **Why:** OctoCode is for working professionals as well as students; teams want a fixed size; signed-in users should get straight back to their work.
+- **Files:** `server/src/routes/rooms.js`, `server/src/index.js`, `server/src/yjs.js`, `client/src/lib/api.ts`, `client/src/pages/{Home.tsx,Projects.tsx,Room.tsx}`, `client/src/components/{TeamSizeSelect.tsx,ProjectTile.tsx}` (new), `docs/*`
+- **Test:** `make up`, open http://localhost:5173. Try "Start quick session" without a team size (warning). Create one for "2 people": the status bar shows "1/2 people here"; open the link in two more private windows and the third sees "This room is full". Sign in, create a project for 2, and have two other accounts open its link: the second one sees "This project is full". Go back to Home while signed in: "Your past projects" lists your projects, most recent first. API: `curl -s -X POST localhost:5050/api/rooms -H "Content-Type: application/json" -d '{"name":"x"}'` → `{"error":"team size must be 1 to 6"}`.
+
 ### 2026-11-01: Full-screen editor, light/dark theme, quick sessions vs long-term projects, accounts
 - **What:**
   - **Full-screen room:** fixed the bug where the editor filled only part of the screen (HeroUI's wrapper div had no height). New layout: header (name, room type, status, avatars, theme, Copy link, Run), editor with a file tab, AI + output panels, status bar. Panels stack on phones.
