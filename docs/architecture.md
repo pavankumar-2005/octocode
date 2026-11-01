@@ -55,6 +55,14 @@ flowchart TB
 
 Because updates merge in any order, two people typing in the same spot still end up with identical text.
 
+### 1b. Edit log (who changed what, and when)
+
+1. `trackEdits` (`client/src/lib/editLog.ts`) observes the shared `Y.Text`.
+2. For each **local** change (`transaction.local`), it reads the change's delta, works out the line range, and appends `{ name, color, from, to, time }` to the shared `Y.Array("editLog")` in the same `Y.Doc`. Remote changes are ignored, because the teammate's browser logs them itself.
+3. Typing by the same person on the same or neighbouring lines within 30 s replaces their last entry with a widened one, so the log shows "lines 4–9" rather than one row per keystroke. Only the newest 200 entries are kept.
+4. Because the log lives in the `Y.Doc`, it uses the same path as the code: live sync over the WebSocket, offline storage in IndexedDB, and persistence in MongoDB (`yjs_docs`). There's no new endpoint or collection.
+5. `EditLog.tsx` renders it under the editor, newest first. Clicking a row jumps the editor to that line.
+
 ### 2. Persistence
 
 - First client opens a room → server loads the saved state from MongoDB (`yjs_docs`) into the in-memory doc.
@@ -107,7 +115,7 @@ Python and JavaScript run in the browser. Java, C++ and C run in the `runner` co
 | Collection | Document |
 | --- | --- |
 | `rooms` | `{ _id (8-char id), name, language (python, javascript, java, cpp, c), kind ("temporary" \| "project"), teamSize (1–6), createdAt, expiresAt? (temporary), ownerId? + members[] + lastOpenedAt? (project) }` |
-| `yjs_docs` | `{ _id (= room id), update (binary Yjs state), updatedAt, expiresAt? (temporary rooms) }` |
+| `yjs_docs` | `{ _id (= room id), update (binary Yjs state: the code and the edit log), updatedAt, expiresAt? (temporary rooms) }` |
 | `users` | `{ _id (12-char id), name, email (unique, lower-case), passwordHash ("salt:scrypt-hash"), createdAt }` |
 | `sessions` | `{ _id (sha256 of token), userId, expiresAt }` |
 
@@ -129,6 +137,8 @@ Indexes (created on server start in `db.js`): unique `users.email`; TTL (`expire
 | `runner/src/index.js` | Runner's `POST /run` endpoint |
 | `client/src/lib/languages.ts` | Supported languages: label, Monaco id, where it runs, starter code |
 | `client/src/lib/collab.ts` | Creates `Y.Doc`, WebSocket provider, IndexedDB persistence |
+| `client/src/lib/editLog.ts` | Records the user's own edits (name, lines, time) in the shared `editLog` array |
+| `client/src/components/EditLog.tsx` | Small "Edit log" panel under the editor; click a row to jump to the line |
 | `client/src/components/CodeEditor.tsx` | Monaco + `y-monaco` binding |
 | `client/src/lib/monaco.ts` | Local Monaco setup (workers, `loader.config`) so `y-monaco` and the editor share one Monaco |
 | `client/src/lib/api.ts` | REST calls (auth, rooms, AI, run); adds the token header |
@@ -139,7 +149,7 @@ Indexes (created on server start in `db.js`): unique `users.email`; TTL (`expire
 | `client/src/pages/Home.tsx` | Landing: past projects (signed in), quick session form + join, long-term project entry |
 | `client/src/pages/Login.tsx` | Sign in / create account, `?next=` redirect |
 | `client/src/pages/Projects.tsx` | Project dashboard: list, create, open by link |
-| `client/src/pages/Room.tsx` | Full-screen room: header, editor, AI + output, status bar; project login redirect |
+| `client/src/pages/Room.tsx` | Full-screen room: header, editor + edit log, AI + output, status bar; project login redirect |
 | `client/src/components/TeamSizeSelect.tsx` | "Team size" dropdown (Just me … 6 people), used when creating rooms |
 | `client/src/components/ProjectTile.tsx` | Project card (members/teamSize, last opened), used on Home and Projects |
 | `client/src/components/TopNav.tsx`, `ThemeToggle.tsx`, `Logo.tsx`, `Backdrop.tsx`, `Icons.tsx` | Shared UI pieces |

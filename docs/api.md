@@ -105,7 +105,9 @@ Limits: compile 15 s, run 10 s, output 64 KB, no stdin, no internet. Java: the f
 - URL: `ws://localhost:5050/yjs/<roomId>?token=<token>` (`token` is optional for temporary rooms)
 - Access check before the upgrade: the connection is closed for an unknown or expired room, for a temporary room that already has `teamSize` connections, and for a project unless the token is valid and its user is in `members`. Browsers can't set headers on a WebSocket, so the token goes in the query string.
 - Protocol: the standard `y-websocket` protocol (binary messages: sync + awareness). Don't send JSON; use `WebsocketProvider` on the client.
-- Shared type: `Y.Text` named `"code"`.
+- Shared types in each room's `Y.Doc`:
+  - `Y.Text` named `"code"`: the code.
+  - `Y.Array` named `"editLog"`: the edit log, a list of `{ name, color, from, to, time, by }` (who changed lines `from`–`to`, `time` in ms since 1970, `by` = Yjs clientID). Each client appends only its own edits; one person's continuous typing on nearby lines within 30 s is merged into one entry; the newest 200 entries are kept.
 - Awareness state per user: `{ user: { name, color } }`.
 
 ## Environment variables

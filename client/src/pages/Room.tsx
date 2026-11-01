@@ -5,6 +5,7 @@ import type { editor } from "monaco-editor";
 import CodeEditor from "../components/CodeEditor";
 import OutputPanel from "../components/OutputPanel";
 import AiChat from "../components/AiChat";
+import EditLog from "../components/EditLog";
 import StatusChip from "../components/StatusChip";
 import Logo from "../components/Logo";
 import ThemeToggle from "../components/ThemeToggle";
@@ -12,6 +13,7 @@ import { ClockIcon, FolderIcon, LinkIcon, PlayIcon } from "../components/Icons";
 import { getRoom, getToken, MAX_TEAM, type Room as RoomInfo } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { createCollab, destroyCollab, type Collab, type User } from "../lib/collab";
+import { trackEdits } from "../lib/editLog";
 import { getLanguage } from "../lib/languages";
 import { runForLanguage, type RunResult } from "../lib/runCode";
 import { getColor, loadUser, saveName } from "../lib/user";
@@ -71,6 +73,7 @@ export default function Room() {
     if (!user || !room) return;
     const c = createCollab(id, user, getToken());
     setCollab(c);
+    const stopEditLog = trackEdits(c, user); // record my edits (name, line, time) in the shared log
 
     // Awareness = who's here right now (name, color, cursor). Not saved, just broadcast.
     const updatePeers = () => {
@@ -95,6 +98,7 @@ export default function Room() {
 
     return () => {
       c.provider.awareness.off("change", updatePeers);
+      stopEditLog();
       destroyCollab(c);
       setCollab(null);
     };
@@ -212,22 +216,35 @@ export default function Room() {
       {/* Fills all the space between the header and the status bar. On small screens the
           side panels stack under the editor; from "lg" up they sit on the right. */}
       <main className="flex min-h-0 flex-1 flex-col gap-2 p-2 lg:flex-row">
-        <section className="flex min-h-[55%] min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-divider bg-content1 lg:min-h-0">
-          <div className="flex h-9 shrink-0 items-center border-b border-divider px-2">
-            <span className="flex h-full items-center gap-2 border-b-2 border-primary px-3 font-mono text-xs">
-              <span className="size-2 rounded-full" style={{ backgroundColor: lang.color }} />
-              {lang.file}
-            </span>
-          </div>
-          <div className="min-h-0 flex-1">
-            <CodeEditor
-              key={collab.ydoc.clientID}
-              collab={collab}
-              language={lang.monaco}
-              onReady={(e) => (editorRef.current = e)}
-            />
-          </div>
-        </section>
+        {/* Left column: the editor, with the small edit log strip under it. */}
+        <div className="flex min-h-[55%] min-w-0 flex-1 flex-col gap-2 lg:min-h-0">
+          <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-divider bg-content1">
+            <div className="flex h-9 shrink-0 items-center border-b border-divider px-2">
+              <span className="flex h-full items-center gap-2 border-b-2 border-primary px-3 font-mono text-xs">
+                <span className="size-2 rounded-full" style={{ backgroundColor: lang.color }} />
+                {lang.file}
+              </span>
+            </div>
+            <div className="min-h-0 flex-1">
+              <CodeEditor
+                key={collab.ydoc.clientID}
+                collab={collab}
+                language={lang.monaco}
+                onReady={(e) => (editorRef.current = e)}
+              />
+            </div>
+          </section>
+          <EditLog
+            ydoc={collab.ydoc}
+            onJump={(line) => {
+              const e = editorRef.current;
+              if (!e) return;
+              e.revealLineInCenter(line);
+              e.setPosition({ lineNumber: line, column: 1 });
+              e.focus();
+            }}
+          />
+        </div>
 
         <aside className="flex min-h-0 flex-1 flex-col gap-2 lg:w-[clamp(340px,30vw,500px)] lg:flex-none">
           <div className="min-h-0 flex-[3]">

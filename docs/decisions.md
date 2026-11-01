@@ -29,6 +29,8 @@ Short records of *why*. Add a new entry whenever you make a technical choice.
 | D23 | **Team size 1–6 per room**, chosen at creation. Projects limit *members*; quick sessions limit *people connected at once* | Projects have accounts, so membership is the natural limit. Quick sessions have no accounts, so the only thing to count is live connections | A quick session counts browser tabs, not people (two tabs = two seats); live counts are in memory, so they reset if the server restarts |
 | D24 | Atomic "join if not full" with `updateOne({ "members.<n-1>": { $exists: false } }, { $addToSet })` | One database step checks and joins together, so two people can't both take the last seat | Slightly unusual query; explained in a comment |
 | D25 | **"Your past projects" on the Home page**, sorted by `lastOpenedAt` | Signed-in users see their work as soon as they arrive, most recent first | One extra write each time a project is opened |
+| D26 | **Edit log stored inside the room's Yjs document** (`Y.Array("editLog")`), not in a new MongoDB collection or API | It syncs live, works offline and is saved exactly like the code, with zero server changes. It's also deleted with a quick session automatically | The log is part of the binary Yjs state, so it isn't searchable in MongoDB; capped at 200 entries to keep the document small |
+| D27 | Each browser logs **only its own** edits, and merges a person's continuous typing on nearby lines (30 s window) into one entry | Logging remote edits too would duplicate every row; one row per keystroke would flood a small panel | The time shown is the *latest* keystroke of that burst; one person with two tabs appears as two authors in the grouping |
 
 ## Template
 

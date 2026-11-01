@@ -2,6 +2,12 @@
 
 Newest first. One entry per change: what, why, files, how to test.
 
+### 2026-11-01: Edit log (who changed which line, and when)
+- **What:** a small **Edit log** panel under the editor shows every change in the room: the person's name (in their cursor color), the line or lines changed, and the time. Newest first, shared live with everyone in the room, saved with the code, and visible again after reopening the room. Clicking an entry jumps to that line. Continuous typing by one person on nearby lines is grouped into one entry.
+- **Why:** when several people edit at once, everyone needs to see who is changing what. Keeping a record of each teammate's changes is part of the project's goal.
+- **Files:** `client/src/lib/editLog.ts` (new), `client/src/components/EditLog.tsx` (new), `client/src/pages/Room.tsx`, `docs/api.md`, `docs/architecture.md`, `docs/decisions.md`, `docs/changelog.md`
+- **Test:** `make up`, create a quick session for 2 people, and open its link in a second (private) window with a different name. Type on different lines in each window: both Edit logs show both names, line numbers and times within a second. Close both windows, open the link again: the log is still there. Click an entry: the editor jumps to that line.
+
 ### 2026-11-01: Team size, past projects, wording for professional teams
 - **What:**
   - **Team size:** choosing 1 to 6 people is now required when creating a quick session or a project. Projects accept at most that many members ("project is full"); quick sessions accept at most that many people at once ("room is full"). The server checks this on the REST call and on the WebSocket. The room status bar shows seats taken, e.g. "1/2 people here", and project cards show "2/4 members".
