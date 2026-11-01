@@ -11,7 +11,7 @@ Multiple people edit the same code at the same time, with no conflicts. Write an
 **Prerequisite:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) (`brew install --cask docker`).
 
 ```bash
-git clone <repo-url> octocode && cd octocode
+git clone https://github.com/pavankumar-2005/octocode.git && cd octocode
 make up
 open http://localhost:5173
 ```
@@ -104,6 +104,7 @@ octocode/
 | --- | --- |
 | [BUILD_GUIDE.md](BUILD_GUIDE.md) | 2-day plan, setup, all code |
 | [docs/how-octocode-works.md](docs/how-octocode-works.md) | **Start here:** the whole project in simple English |
+| [docs/project-overview.md](docs/project-overview.md) | Project overview (problem, goals, features) |
 | [docs/README.md](docs/README.md) | Docs index and how to update |
 | [docs/architecture.md](docs/architecture.md) | How the system works |
 | [docs/api.md](docs/api.md) | REST and WebSocket reference |

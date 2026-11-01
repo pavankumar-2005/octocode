@@ -2,6 +2,12 @@
 
 Newest first. One entry per change. See `docs/README.md` for the template.
 
+### 2026-11-01: Connected to GitHub
+- **What:** Linked the local repo to `https://github.com/pavankumar-2005/octocode` (remote `origin`, branch `main`) and merged the README-only commit that was created on GitHub. Kept the local `README.md` (setup + commands) and saved the GitHub README as `docs/project-overview.md`. Put the real clone URL in the README quick start.
+- **Why:** The first push was rejected because GitHub already had a commit the local repo didn't know about (two unrelated histories).
+- **Files:** `README.md`, `docs/project-overview.md` (new), `docs/README.md`, `docs/changelog.md`, `docs/how-octocode-works.md`, `docs/learning-path.md`
+- **Test:** `git remote -v` shows `origin`; `git status` says "up to date with 'origin/main'"; open https://github.com/pavankumar-2005/octocode and see all folders.
+
 ### 2026-10-30: Plain-English project guide
 - **What:** Added `docs/how-octocode-works.md`: every part of OctoCode explained simply (basics, client, server, database, runner, AI, Docker, CRDTs), step-by-step walkthroughs, problems we solved, code map, limits, glossary, and a build journal. Added the rule to keep it updated to `CLAUDE.md`.
 - **Why:** The developer builds this alone and needs to understand every part.
