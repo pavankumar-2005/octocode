@@ -1,0 +1,65 @@
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports: ["27017:27017"]
+    volumes: [mongo-data:/data/db] # named volume: data survives `make down`
+    healthcheck:
+      # server waits for this to pass (depends_on: service_healthy)
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build: ./server
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # "mongo" is the service name; Compose's network resolves it to the container
+      MONGODB_URI: mongodb://mongo:27017/octocode
+      RUNNER_URL: http://runner:7000
+    # host 5050 → container 5000: macOS AirPlay Receiver already uses port 5000 on the Mac
+    ports: ["5050:5000"]
+    volumes:
+      - ./server:/app # bind mount: your edits show up instantly (node --watch restarts)
+      - /app/node_modules # keep the container's node_modules, don't hide it with the bind mount
+    networks: [default, sandbox] # the only service that can talk to the runner
+    depends_on:
+      mongo:
+        condition: service_healthy
+      runner:
+        condition: service_started
+
+  # Compiles and runs Java, C++ and C. It executes untrusted code, so it is locked down:
+  runner:
+    build: ./runner
+    restart: unless-stopped
+    networks: [sandbox] # internal-only network: no internet, no published ports
+    read_only: true # user code can't modify the container's files...
+    tmpfs: ["/tmp:rw,exec,size=64m"] # ...except a small in-memory /tmp (exec so compiled programs can run)
+    mem_limit: 512m # a memory-hungry program can't eat all of Docker's RAM
+    cpus: 1.0
+    pids_limit: 128 # stops fork bombs (JVM threads count too)
+    cap_drop: [ALL] # no Linux capabilities (can't change users, open raw sockets, ...)
+    security_opt: ["no-new-privileges:true"]
+
+  client:
+    build: ./client
+    restart: unless-stopped
+    environment:
+      # these URLs are used by YOUR browser, so they point at localhost, not "server"
+      VITE_API_URL: http://localhost:5050
+      VITE_WS_URL: ws://localhost:5050/yjs
+    ports: ["5173:5173"]
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    depends_on: [server]
+
+volumes:
+  mongo-data:
+
+networks:
+  sandbox:
+    internal: true # Docker gives this network no route to the outside world

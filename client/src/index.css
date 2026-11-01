@@ -1,0 +1,33 @@
+@import "tailwindcss";
+@plugin "./hero.ts";
+@source "../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
+@custom-variant dark (&:is(.dark *));
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* y-monaco base styles for remote cursors. Per-user colors and names are added in Room.tsx. */
+.yRemoteSelection {
+  opacity: 0.35;
+}
+.yRemoteSelectionHead {
+  position: absolute;
+  height: 100%;
+  box-sizing: border-box;
+  border-left: 2px solid;
+}
+.yRemoteSelectionHead::after {
+  position: absolute;
+  top: -1.2em;
+  left: -2px;
+  padding: 0 4px;
+  font-size: 11px;
+  line-height: 1.2em;
+  white-space: nowrap;
+  border-radius: 3px 3px 3px 0;
+  color: #000;
+  pointer-events: none;
+}
